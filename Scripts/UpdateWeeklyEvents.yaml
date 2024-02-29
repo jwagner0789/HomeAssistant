@@ -1,0 +1,57 @@
+alias: Update Weekly Events
+sequence:
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.weekly_events
+    data:
+      value: " "
+    enabled: true
+  - service: calendar.get_events
+    data:
+      start_date_time: "{{ as_timestamp(now()) | timestamp_custom('%F %T', True) }}"
+      end_date_time: >-
+        {% for _ in range(1, 8) %}{% if loop.index == 6 %}{{
+        (as_timestamp(now()) + (24*3600*loop.index)) | timestamp_custom('%F',
+        True) }} 00:00:00{% endif %}{% endfor %}
+    target:
+      entity_id:      ######### List all calendars here
+        - calendar.calendar_1
+        - calendar.calendar_2
+        - calendar.calendar_3
+        - calendar.calendar_4
+    response_variable: calendar_events
+    enabled: true
+    alias: Updated - Get Calendar Events
+  - variables:
+      raw_events: >       ######### List the same calendars from above here
+        {{ calendar_events['calendar.calendar_1'].events +
+        calendar_events['calendar.calendar_2'].events +
+        calendar_events['calendar.calendar_3'].events +
+        calendar_events['calendar.calendar_4'].events  }}
+      modify_events: >
+        {% for raw_event in raw_events
+        %}{{as_timestamp(as_datetime(raw_event.start).astimezone()) |
+        timestamp_custom('%Y %m %d %A @ %-I:%M %p', True) }} -
+        {{as_timestamp(as_datetime(raw_event.end).astimezone()) |
+        timestamp_custom('%-I:%M%p', True) }}: {{ raw_event.summary }}{{- '\n'
+        -}}{% endfor %}
+      split_events: >
+        {%- set split = (modify_events).split('\n') -%}  {%- set split = split |
+        unique | sort -%} {{ split }}
+      format_events: >
+        {% set all = namespace(events=[]) %} {%- for items in split_events -%}
+        {%- if items != '' and items != '\n' -%} {%- set all.events = all.events
+        + [items[11:]] -%} {%- endif -%} {%- endfor -%} {% set ns = namespace (c
+        =0) %} {% for items in all.events | unique %} {% set ns.c = ns.c +
+        (items | count) %} {% endfor %}  {% for _ in range(1, ns.c) %} {% if
+        ns.c > 255 %} {% set ns.c = 0 %} {% set all.events =
+        all.events[:-loop.index] %} {% for items in all.events %} {% set ns.c =
+        ns.c + (items | count) %} {% endfor %} {% else %}{% break %}{% endif
+        %}{% endfor %}{% for event in all.events %}{{event}}{{- '\n' -}}{%
+        endfor %}
+  - service: input_text.set_value
+    target:
+      entity_id: input_text.weekly_events
+    data:
+      value: "{{ format_events }}"
+mode: queued
