@@ -1,0 +1,89 @@
+alias: Time - Notifications - Home Maintenance
+description: ""
+trigger:
+  - platform: time
+    at: "17:30:00"
+condition: []
+action:
+  - alias: Dog 💩
+    choose:
+      - conditions:
+          - condition: numeric_state
+            entity_id: counter.days_since_dog_poop_can_emptied
+            above: 60
+        sequence:
+          - service: notify.mobile_app_ # Enter mobile device to notify
+            data:
+              message: The dog 💩 needs taken out
+              title: Home Maintenance
+              data:
+                notification_icon: mdi:dog
+                color: "#FF9800"
+  - choose:
+      - conditions:
+          - condition: numeric_state
+            entity_id: counter.days_since_furnace_filter_changed
+            above: 90
+        sequence:
+          - service: notify.mobile_app_ # Enter mobile device to notify
+            data:
+              message: The furnace filter needs changed
+              title: Home Maintenance
+              data:
+                color: "#FF9800"
+                notification_icon: mdi:hvac
+    alias: Furnace Filter
+  - alias: Washer Filter
+    choose:
+      - conditions:
+          - condition: numeric_state
+            entity_id: counter.days_since_washer_filter_cleaned
+            above: 180
+        sequence:
+          - service: notify.mobile_app_ # Enter mobile device to notify
+            data:
+              message: The washer filter needs changed
+              title: Home Maintenance
+              data:
+                color: "#FF9800"
+                notification_icon: mdi:washing-machine
+  - alias: Lawn Mowing
+    choose:
+      - conditions:
+          - condition: numeric_state
+            entity_id: counter.days_since_grass_mowed
+            above: 7
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: sensor.season
+                state: summer
+              - condition: state
+                entity_id: sensor.season
+                state: spring
+              - condition: state
+                entity_id: sensor.season
+                state: autumn
+        sequence:
+          - service: notify.mobile_app_ # Enter mobile device to notify
+            data:
+              message: The grass needs mowed.
+              title: Home Maintenance
+              data:
+                color: "#FF9800"
+                notification_icon: mdi:grass
+  - alias: Robot Vacuum
+    choose:
+      - conditions:
+          - condition: numeric_state
+            entity_id: counter.days_since_robot_vacuum_bin_emptied
+            above: 5
+        sequence:
+          - service: notify.mobile_app_ # Enter mobile device to notify
+            data:
+              message: The robot vacuum bin needs emptied
+              title: Home Maintenance
+              data:
+                color: "#FF9800"
+                notification_icon: mdi:robot-vacuum-alert
+mode: single
